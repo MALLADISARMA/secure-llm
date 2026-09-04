@@ -57,6 +57,25 @@ This keeps the main branch stable and ensures that every contribution is reviewe
 
 ---
 
+# 📐 SDD Requirement
+
+Every change must include a corresponding Software Design Document (SDD) update in the `specs/` directory. This applies to:
+
+* Features and bug fixes
+* API, backend, and frontend changes
+* CI/CD and infrastructure changes
+* Security, testing, and documentation changes
+
+Add or update a Markdown file under `specs/` that describes what changed, why it changed, how it was tested, and any relevant future work. A Pull Request without the required SDD update will fail the CI documentation check and should not be merged.
+
+Example:
+
+```text
+specs/<change-name>.md
+```
+
+---
+
 # 🚀 Getting Started
 
 ## 1. Fork the Repository
@@ -218,6 +237,8 @@ could contain:
 * Documentation
 
 Avoid unrelated changes in the same Pull Request.
+
+Before opening a Pull Request, add or update the relevant SDD file under `specs/`. The SDD must correspond to the change in the Pull Request.
 
 ---
 
@@ -607,6 +628,7 @@ Before submitting a Pull Request, check:
 * [ ] No secrets are committed
 * [ ] No unnecessary files are included
 * [ ] Documentation is updated if necessary
+* [ ] A relevant SDD is added or updated under `specs/`
 * [ ] Security implications have been considered
 * [ ] Commit messages are meaningful
 * [ ] CI checks pass
