@@ -38,6 +38,17 @@ specs/*.md
 
 A pull request without an SDD update fails with an instruction to update the `specs/` directory and commit the change.
 
+## Contributor Requirement
+
+The contribution guide requires an SDD update for every project change, including:
+
+- Features and bug fixes
+- API, backend, and frontend changes
+- CI/CD and infrastructure changes
+- Security, testing, and documentation changes
+
+Contributors must add or update a Markdown file under `specs/` describing what changed, why it changed, how it was tested, and any relevant future work. The pull-request checklist includes this requirement so it is reviewed before merge.
+
 ## Failure Behavior
 
 - Missing root dependencies: dependency installation is skipped.
@@ -47,7 +58,7 @@ A pull request without an SDD update fails with an instruction to update the `sp
 
 ## Change Contract
 
-Any feature, bug fix, API change, or CI change should include a relevant Markdown update in `specs/`. The SDD should describe the changed behavior, validation approach, and any future work that remains.
+Any feature, bug fix, API change, CI change, security change, testing change, or documentation change should include a relevant Markdown update in `specs/`. The SDD should describe the changed behavior, rationale, validation approach, and any future work that remains.
 
 ## Future Improvements
 
