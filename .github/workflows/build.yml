@@ -12,31 +12,41 @@ on:
 
 jobs:
   build:
-    name: Build and Test
+    name: Build, Test and SDD Check
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout code
+
+      # --------------------------------
+      # Checkout
+      # --------------------------------
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      # 2. Check repository
+      # --------------------------------
+      # Repository Check
+      # --------------------------------
       - name: Repository check
         run: |
           echo "Starting SecureLLM CI..."
           echo "Repository checkout successful."
 
-      # 3. Python setup
+      # --------------------------------
+      # Setup Python
+      # --------------------------------
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      # 4. Check Python
       - name: Check Python version
         run: python --version
 
-      # 5. Install dependencies if requirements.txt exists
+      # --------------------------------
+      # Install Dependencies
+      # --------------------------------
       - name: Install Python dependencies
         shell: bash
         run: |
@@ -46,7 +56,9 @@ jobs:
             echo "No root requirements.txt found. Skipping."
           fi
 
-      # 6. Run tests if tests exist
+      # --------------------------------
+      # Run Tests
+      # --------------------------------
       - name: Run tests
         shell: bash
         run: |
@@ -57,6 +69,48 @@ jobs:
             echo "No tests directory found. Skipping tests."
           fi
 
-      # 7. Final status
+      # --------------------------------
+      # SDD Check
+      # --------------------------------
+      - name: Check SDD documentation
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          echo "Checking for required SDD changes..."
+
+          git fetch origin main
+
+          CHANGED_FILES=$(git diff --name-only origin/main...HEAD)
+
+          echo "Changed files:"
+          echo "$CHANGED_FILES"
+
+          SDD_CHANGED=$(echo "$CHANGED_FILES" | grep '^specs/.*\.md$' || true)
+
+          if [ -z "$SDD_CHANGED" ]; then
+            echo ""
+            echo "ERROR: No SDD update detected."
+            echo ""
+            echo "Every project change must include an update to the specs/ directory."
+            echo ""
+            echo "Please:"
+            echo "1. Update the relevant SDD .md file"
+            echo "2. Commit the change"
+            echo "3. Push your branch again"
+            echo ""
+            exit 1
+          fi
+
+          echo ""
+          echo "SDD update detected:"
+          echo "$SDD_CHANGED"
+          echo ""
+          echo "SDD check passed."
+
+      # --------------------------------
+      # CI Completed
+      # --------------------------------
       - name: CI completed
-        run: echo "SecureLLM CI completed successfully."
+        run: |
+          echo "SecureLLM CI completed successfully."
+
