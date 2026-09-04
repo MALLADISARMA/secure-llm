@@ -1,0 +1,62 @@
+
+name: SecureLLM CI
+
+on:
+  push:
+    branches:
+      - "**"
+
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Build and Test
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Check repository
+      - name: Repository check
+        run: |
+          echo "Starting SecureLLM CI..."
+          echo "Repository checkout successful."
+
+      # 3. Python setup
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # 4. Check Python
+      - name: Check Python version
+        run: python --version
+
+      # 5. Install dependencies if requirements.txt exists
+      - name: Install Python dependencies
+        shell: bash
+        run: |
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          else
+            echo "No root requirements.txt found. Skipping."
+          fi
+
+      # 6. Run tests if tests exist
+      - name: Run tests
+        shell: bash
+        run: |
+          if [ -d tests ]; then
+            pip install pytest
+            pytest
+          else
+            echo "No tests directory found. Skipping tests."
+          fi
+
+      # 7. Final status
+      - name: CI completed
+        run: echo "SecureLLM CI completed successfully."
