@@ -61,6 +61,8 @@ jobs:
       # --------------------------------
       - name: Run tests
         shell: bash
+        env:
+          PYTHONPATH: api-gateway
         run: |
           if [ -d tests ]; then
             pip install pytest
