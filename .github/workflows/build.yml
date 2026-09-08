@@ -50,10 +50,11 @@ jobs:
       - name: Install Python dependencies
         shell: bash
         run: |
-          if [ -f requirements.txt ]; then
-            pip install -r requirements.txt
+          if [ -f api-gateway/requirements.txt ]; then
+            python -m pip install -r api-gateway/requirements.txt
           else
-            echo "No root requirements.txt found. Skipping."
+            echo "API gateway requirements file is missing."
+            exit 1
           fi
 
       # --------------------------------
@@ -65,10 +66,10 @@ jobs:
           PYTHONPATH: api-gateway
         run: |
           if [ -d tests ]; then
-            pip install pytest
-            pytest
+            python -m pytest tests
           else
-            echo "No tests directory found. Skipping tests."
+            echo "Tests directory is missing."
+            exit 1
           fi
 
       # --------------------------------
