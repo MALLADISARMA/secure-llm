@@ -1,21 +1,21 @@
+"""
+AI-based prompt injection detection.
+"""
+
+from app.security.aiclassifier import classify_prompt
+
+
+THRESHOLD = 0.70
+
+
 def detect_prompt_injection(message: str) -> bool:
     """
-    Basic rule-based prompt injection detection.
+    Semantically detect prompt injection attempts.
+
+    The decision is based on an AI classification model,
+    not predefined keywords.
     """
 
-    suspicious_patterns = [
-        "ignore previous instructions",
-        "ignore all previous instructions",
-        "ignore your instructions",
-        "system prompt",
-        "reveal your prompt",
-        "jailbreak",
-    ]
+    scores = classify_prompt(message)
 
-    message = message.lower()
-
-    for pattern in suspicious_patterns:
-        if pattern in message:
-            return True
-
-    return False
+    return scores["prompt injection"] >= THRESHOLD

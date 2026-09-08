@@ -2,7 +2,7 @@
 
 ## Scope
 
-This change establishes the first testable HTTP contract for the SecureLLM API Gateway. The service is implemented with FastAPI and currently runs as a local application before integration with an LLM service.
+The SecureLLM API Gateway is implemented with FastAPI and uses semantic security analysis before a request can be forwarded to an LLM service.
 
 ## API Contract
 
@@ -46,7 +46,7 @@ Blocked response:
 ```json
 {
   "status": "blocked",
-  "reason": "Potential prompt injection detected",
+  "reason": "Potentially unsafe content detected",
   "message": "Request blocked by SecureLLM Security Gateway"
 }
 ```
@@ -54,9 +54,24 @@ Blocked response:
 ## Request Flow
 
 1. FastAPI parses and validates the JSON body.
-2. The gateway lowercases the message and checks it against the initial rule-based prompt-injection patterns.
-3. Matching messages are blocked and are not forwarded to an LLM.
-4. Non-matching messages are returned as allowed responses. LLM forwarding will be added in a later change.
+2. The gateway sends the message to the central semantic analyzer.
+3. The analyzer scores six security categories using the zero-shot classification model.
+4. A category is detected when its confidence is at least `0.70`.
+5. Any detected category blocks the request and prevents LLM forwarding.
+6. Messages with no detected category are returned as allowed responses. LLM forwarding will be added in a later change.
+
+## Semantic Security Analysis
+
+`app/security/aiclassifier.py` loads and caches `facebook/bart-large-mnli` through Hugging Face Transformers. The analyzer in `app/security/analyzer.py` evaluates:
+
+- Prompt Injection
+- Jailbreak
+- PII / Sensitive Data
+- System Prompt Leakage
+- Toxicity
+- Malicious Intent
+
+The analyzer returns an overall score, highest-risk category, and per-category confidence, detection, and severity values. The API currently exposes only the allowed or blocked response.
 
 ## Local Verification
 
@@ -71,7 +86,7 @@ Use `http://127.0.0.1:8000/docs` to execute both endpoints interactively. The ro
 
 ## Future Changes
 
-- Replace the initial pattern list with a configurable security policy.
-- Add automated API tests for allowed, blocked, and invalid requests.
+- Add model loading configuration and health checks for production deployments.
+- Add model-based moderation evaluation and calibration against labeled security prompts.
 - Forward allowed requests to the configured vLLM or LLM service.
 - Add structured logging, authentication, rate limiting, and output security checks.

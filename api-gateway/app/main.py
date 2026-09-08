@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 
-from app.security.prompt_injection import detect_prompt_injection
+from app.security.policy import is_unsafe_message
 
 
 app = FastAPI(
@@ -27,10 +27,10 @@ def home():
 @app.post("/chat")
 def chat(request: ChatRequest):
 
-    if detect_prompt_injection(request.message):
+    if is_unsafe_message(request.message):
         return {
             "status": "blocked",
-            "reason": "Potential prompt injection detected",
+            "reason": "Potentially unsafe content detected",
             "message": "Request blocked by SecureLLM Security Gateway"
         }
 
