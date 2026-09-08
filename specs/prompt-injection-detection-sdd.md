@@ -2,40 +2,35 @@
 
 ## Purpose
 
-This change adds an initial security check to the SecureLLM API Gateway. The gateway detects common prompt-injection and jailbreak phrases before an incoming chat request can be forwarded to an LLM service.
+The SecureLLM API Gateway uses semantic classification to detect prompt injection before an incoming chat request can be forwarded to an LLM service.
 
 ## Scope
 
-The detector is implemented in `api-gateway/security/promptinjection.py` as the `detect_prompt_injection` function. The security logic was moved out of `api-gateway/app/main.py` so it can be tested and extended independently from the HTTP layer.
+The detector is implemented in `api-gateway/app/security/prompt_injection.py` as the `detect_prompt_injection` function. It uses the shared classifier in `aiclassifier.py` and is tested independently from the HTTP layer.
 
 ## Detection Design
 
 The detector accepts a string message and returns a Boolean result:
 
-- `True` when the message contains a configured suspicious phrase.
-- `False` when no configured phrase is found.
+- `True` when the prompt-injection confidence is at least `0.70`.
+- `False` when the confidence is below `0.70`.
 
-Detection is case-insensitive. The initial rule set covers:
-
-- Attempts to ignore previous or current instructions.
-- Requests to reveal the system or prompt.
-- The term `jailbreak`.
-
-Matching uses substring checks. This is intentionally a small, deterministic first implementation rather than a complete prompt-security model.
+The zero-shot model evaluates semantic meaning, so paraphrased and previously unseen wording can be classified without adding a new phrase to a list.
 
 ## API Request Flow
 
 1. FastAPI validates the `POST /chat` request through the `ChatRequest` model.
-2. The gateway passes `request.message` to `detect_prompt_injection`.
-3. A matching message receives a blocked response and is not forwarded to an LLM.
-4. A non-matching message receives the existing allowed response.
+2. The gateway passes `request.message` to the central analyzer.
+3. The analyzer evaluates prompt injection along with the other five security categories.
+4. Any category above the threshold receives a blocked response and is not forwarded to an LLM.
+5. A message below all thresholds receives the existing allowed response.
 
 Blocked requests return:
 
 ```json
 {
   "status": "blocked",
-  "reason": "Potential prompt injection detected",
+  "reason": "Potentially unsafe content detected",
   "message": "Request blocked by SecureLLM Security Gateway"
 }
 ```
@@ -47,8 +42,8 @@ Allowed requests continue to return the submitted message with an `allowed` stat
 `tests/test_promptinjection.py` verifies:
 
 - A normal Kubernetes question is allowed.
-- An instruction-override request is detected.
-- A jailbreak request is detected.
+- An instruction-override request is detected semantically.
+- A paraphrased instruction-override request is detected through mocked model scores.
 
 Run the focused tests from the repository root:
 
@@ -58,7 +53,6 @@ python -m pytest tests/test_promptinjection.py
 
 ## Limitations and Future Work
 
-- Phrase matching can miss novel or obfuscated attacks and may produce false positives.
-- The suspicious-pattern list is currently hard-coded.
-- API-level tests should be added for blocked, allowed, and invalid `/chat` requests.
-- Future work can introduce configurable policies, structured security logging, and additional detection methods before forwarding allowed requests to an LLM service.
+- Model classification can produce false positives and false negatives.
+- The BART model requires additional memory and may need to be downloaded before first use.
+- Future work should add labeled evaluation data, model health checks, structured security logging, and configurable thresholds.

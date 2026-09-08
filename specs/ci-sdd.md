@@ -17,8 +17,8 @@ The workflow uses Ubuntu and Python 3.12.
 
 1. Check out the repository with full history.
 2. Confirm that the repository checkout succeeded.
-3. Install Python dependencies from `requirements.txt` when that file exists.
-4. Run the test suite when a `tests/` directory exists.
+3. Install Python dependencies from `api-gateway/requirements.txt`.
+4. Run the complete test suite from the repository root with `PYTHONPATH=api-gateway`.
 5. On pull requests, compare the branch with `origin/main` and require at least one changed Markdown file under `specs/`.
 6. Report successful completion.
 
@@ -51,8 +51,8 @@ Contributors must add or update a Markdown file under `specs/` describing what c
 
 ## Failure Behavior
 
-- Missing root dependencies: dependency installation is skipped.
-- Missing tests directory: test execution is skipped.
+- Missing `api-gateway/requirements.txt`: dependency installation fails.
+- Missing `tests/` directory: test execution fails.
 - Missing SDD update on a pull request: the workflow fails.
 - Any command failure in the active workflow step causes CI to fail.
 
@@ -62,7 +62,5 @@ Any feature, bug fix, API change, CI change, security change, testing change, or
 
 ## Future Improvements
 
-- Add a root `requirements.txt` or update the workflow to install dependencies from `api-gateway/requirements.txt`.
-- Add automated API tests for `GET /` and `POST /chat`.
 - Add linting, formatting, and type-checking stages.
 - Upload test and coverage reports as CI artifacts.
