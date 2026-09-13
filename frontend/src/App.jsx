@@ -6,7 +6,7 @@ import {
 
 import Navbar from "./components/Navbar";
 
-import Dashboard from "./pages/Dashboard";
+import Dashboard from "./pages/DashBoard";
 import Analyzer from "./pages/Analyzer";
 import History from "./pages/History";
 
