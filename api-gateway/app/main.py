@@ -1,7 +1,7 @@
-from fastapi import FastAPI
-from pydantic import BaseModel
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, Field
 
-from app.security.policy import is_unsafe_message
+from app.security.analyzer import analyze_prompt
 
 
 app = FastAPI(
@@ -12,7 +12,7 @@ app = FastAPI(
 
 
 class ChatRequest(BaseModel):
-    message: str
+    message: str = Field(..., min_length=1, max_length=10_000)
 
 
 @app.get("/")
@@ -26,15 +26,21 @@ def home():
 
 @app.post("/chat")
 def chat(request: ChatRequest):
+    if not request.message.strip():
+        raise HTTPException(status_code=422, detail="message must not be blank")
 
-    if is_unsafe_message(request.message):
+    analysis = analyze_prompt(request.message)
+
+    if analysis["blocked"]:
         return {
             "status": "blocked",
             "reason": "Potentially unsafe content detected",
-            "message": "Request blocked by SecureLLM Security Gateway"
+            "message": "Request blocked by SecureLLM Security Gateway",
+            "analysis": analysis,
         }
 
     return {
         "status": "allowed",
-        "message": request.message
+        "message": request.message,
+        "analysis": analysis,
     }
