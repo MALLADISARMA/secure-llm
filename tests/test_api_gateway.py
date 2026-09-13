@@ -26,6 +26,28 @@ def test_chat_allows_safe_message():
     assert response.json() == {
         "status": "allowed",
         "message": "What is Kubernetes?",
+        "analysis": {
+            "allowed": True,
+            "blocked": False,
+            "overall_score": 5.0,
+            "highest_risk": "Prompt Injection",
+            "results": [
+                {
+                    "category": category,
+                    "detected": False,
+                    "confidence": 0.05,
+                    "severity": "NONE",
+                }
+                for category in (
+                    "Prompt Injection",
+                    "Jailbreak",
+                    "PII / Sensitive Data",
+                    "System Prompt Leakage",
+                    "Toxicity",
+                    "Malicious Intent",
+                )
+            ],
+        },
     }
 
 
@@ -40,6 +62,50 @@ def test_chat_blocks_prompt_injection():
         "status": "blocked",
         "reason": "Potentially unsafe content detected",
         "message": "Request blocked by SecureLLM Security Gateway",
+        "analysis": {
+            "allowed": False,
+            "blocked": True,
+            "overall_score": 95.0,
+            "highest_risk": "Prompt Injection",
+            "results": [
+                {
+                    "category": "Prompt Injection",
+                    "detected": True,
+                    "confidence": 0.95,
+                    "severity": "HIGH",
+                },
+                {
+                    "category": "Jailbreak",
+                    "detected": False,
+                    "confidence": 0.05,
+                    "severity": "NONE",
+                },
+                {
+                    "category": "PII / Sensitive Data",
+                    "detected": False,
+                    "confidence": 0.05,
+                    "severity": "NONE",
+                },
+                {
+                    "category": "System Prompt Leakage",
+                    "detected": True,
+                    "confidence": 0.95,
+                    "severity": "HIGH",
+                },
+                {
+                    "category": "Toxicity",
+                    "detected": False,
+                    "confidence": 0.05,
+                    "severity": "NONE",
+                },
+                {
+                    "category": "Malicious Intent",
+                    "detected": False,
+                    "confidence": 0.05,
+                    "severity": "NONE",
+                },
+            ],
+        },
     }
 
 
@@ -63,5 +129,12 @@ def test_chat_blocks_all_security_detector_categories(message):
 
 def test_chat_rejects_missing_message():
     response = client.post("/chat", json={})
+
+    assert response.status_code == 422
+
+
+@pytest.mark.parametrize("message", ["", " ", "x" * 10001])
+def test_chat_rejects_invalid_message_length(message):
+    response = client.post("/chat", json={"message": message})
 
     assert response.status_code == 422

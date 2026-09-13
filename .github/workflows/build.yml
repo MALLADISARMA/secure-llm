@@ -32,6 +32,13 @@ jobs:
         run: |
           echo "Starting SecureLLM CI..."
           echo "Repository checkout successful."
+          test -f api-gateway/requirements.txt
+          test -d api-gateway/app
+          test -d tests
+          test -f frontend/package.json
+          test -f frontend/package-lock.json
+          test -d frontend/src
+          test -d specs
 
       # --------------------------------
       # Setup Python
@@ -50,12 +57,8 @@ jobs:
       - name: Install Python dependencies
         shell: bash
         run: |
-          if [ -f api-gateway/requirements.txt ]; then
-            python -m pip install -r api-gateway/requirements.txt
-          else
-            echo "API gateway requirements file is missing."
-            exit 1
-          fi
+          python -m pip install --upgrade pip
+          python -m pip install -r api-gateway/requirements.txt
 
       # --------------------------------
       # Run Tests
@@ -65,12 +68,32 @@ jobs:
         env:
           PYTHONPATH: api-gateway
         run: |
-          if [ -d tests ]; then
-            python -m pytest tests
-          else
-            echo "Tests directory is missing."
-            exit 1
-          fi
+          python -m pytest -q tests
+
+      - name: Check Python syntax
+        shell: bash
+        env:
+          PYTHONPATH: api-gateway
+        run: python -m compileall -q api-gateway/app tests
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Lint frontend
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
 
       # --------------------------------
       # SDD Check

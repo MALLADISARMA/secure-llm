@@ -37,6 +37,68 @@ An LLM application can be attacked through:
 
 SecureLLM aims to provide a security layer between users and the LLM.
 
+---
+
+# Local Development
+
+The repository currently contains a FastAPI security gateway and a React/Vite frontend. Run them in separate terminals.
+
+## Prerequisites
+
+- Python 3.12 or newer
+- Node.js 22 or newer
+- npm
+
+## Start the API Gateway
+
+From the repository root:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r api-gateway/requirements.txt
+$env:PYTHONPATH = "api-gateway"
+python -m uvicorn app.main:app --reload --port 8000
+```
+
+The API is available at `http://localhost:8000`. Open `http://localhost:8000/docs` for the interactive API documentation.
+
+## Start the Frontend
+
+In a second terminal:
+
+```powershell
+Set-Location frontend
+npm ci
+npm run dev
+```
+
+Vite prints the local frontend URL, normally `http://localhost:5173`. The frontend sends requests to `http://localhost:8000` by default. To use another gateway URL, set `VITE_API_BASE_URL` before starting Vite:
+
+```powershell
+$env:VITE_API_BASE_URL = "http://localhost:8000"
+npm run dev
+```
+
+## Run Checks
+
+From the repository root:
+
+```powershell
+$env:PYTHONPATH = "api-gateway"
+python -m pytest -q
+```
+
+From `frontend/`:
+
+```powershell
+npm ci
+npm run lint
+npm run build
+```
+
+The same backend and frontend checks run in GitHub Actions through `.github/workflows/build.yml`.
+
 ```text
 User
   ↓
