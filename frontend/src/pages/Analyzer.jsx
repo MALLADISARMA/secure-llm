@@ -3,13 +3,18 @@ import { useState } from "react";
 import PromptEditor from "../components/PromptEditor";
 import AnalysisResult from "../components/AnalysisResult";
 
-import { analyzePrompt } from "../services/api";
+import {
+  analyzePrompt,
+  generateLLMResponse
+} from "../services/api";
 
 export default function Analyzer() {
 
   const [loading, setLoading] = useState(false);
 
   const [result, setResult] = useState(null);
+
+  const [llmResponse, setLlmResponse] = useState("");
 
   const [error, setError] = useState("");
 
@@ -23,17 +28,28 @@ export default function Analyzer() {
 
       setResult(null);
 
-      const response =
+      setLlmResponse("");
+
+      // Step 1: Security analysis
+      const analysisResponse =
         await analyzePrompt(prompt);
 
-      setResult(response);
+      setResult(analysisResponse.analysis);
+
+      if (analysisResponse.status !== "allowed") {
+        return;
+      }
+
+      const llmData = await generateLLMResponse(prompt);
+
+      setLlmResponse(llmData.response);
 
     } catch (error) {
 
       console.error(error);
 
       setError(
-        "Unable to connect to SecureLLM API Gateway."
+        "Unable to connect to SecureLLM services."
       );
 
     } finally {
@@ -91,9 +107,21 @@ export default function Analyzer() {
           )}
 
           {!loading && result && (
-            <AnalysisResult
-              result={result}
-            />
+            <div className="space-y-6">
+
+              {/* Security Analysis */}
+              <AnalysisResult
+                result={result}
+              />
+
+              {/* LLM Response */}
+              {llmResponse && (
+                <LLMResponse
+                  response={llmResponse}
+                />
+              )}
+
+            </div>
           )}
 
           {!loading && !result && (
@@ -109,7 +137,38 @@ export default function Analyzer() {
 }
 
 
+function LLMResponse({ response }) {
+
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+
+      <div className="mb-4">
+
+        <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+          Language Model
+        </p>
+
+        <h2 className="mt-1 text-lg font-semibold text-slate-900">
+          LLM Response
+        </h2>
+
+      </div>
+
+      <div className="rounded-lg bg-slate-50 p-4">
+
+        <p className="whitespace-pre-wrap text-sm leading-6 text-slate-700">
+          {response}
+        </p>
+
+      </div>
+
+    </div>
+  );
+}
+
+
 function LoadingState() {
+
   return (
     <div className="flex min-h-[350px] items-center justify-center rounded-xl border border-slate-200 bg-white shadow-sm">
 
@@ -122,7 +181,7 @@ function LoadingState() {
         </p>
 
         <p className="mt-1 text-xs text-slate-400">
-          Running semantic security checks...
+          Running security checks and generating response...
         </p>
 
       </div>
@@ -133,15 +192,18 @@ function LoadingState() {
 
 
 function EmptyState() {
+
   return (
     <div className="flex min-h-[350px] items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white">
 
       <div className="max-w-sm px-6 text-center">
 
         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100">
+
           <span className="text-xl text-slate-500">
             ⌁
           </span>
+
         </div>
 
         <h2 className="mt-4 text-sm font-semibold text-slate-900">

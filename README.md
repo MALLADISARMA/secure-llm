@@ -1,28 +1,27 @@
 # SecureLLM 🛡️
 
-### A Kubernetes-Native AI Security Platform for LLM Applications
+### An AI Security Tool for Safer LLM Applications
 
-SecureLLM is an open-source project that combines **Large Language Models (LLMs), AI security, RAG, and Kubernetes** to build a secure and production-oriented LLM application.
+SecureLLM is an open-source project for validating prompts and applying AI security controls before requests reach a language model.
 
-The goal is to create a ChatGPT-like application where user requests are inspected by an **AI Security Gateway** before reaching the LLM.
+The current application provides a React prompt tool, a FastAPI security gateway, risk scoring, and security detector results. An optional local LLM service can generate a response after a prompt is allowed.
 
 The platform is designed to detect and prevent attacks such as:
 
 * Prompt Injection
 * Jailbreak Attempts
 * PII / Sensitive Data Leakage
-* Malicious RAG Documents
 * Excessive Requests / Abuse
 * Unauthorized Tool or Agent Actions
 * Unsafe LLM Outputs
 
-The entire platform is designed to run on **Kubernetes** with additional infrastructure security controls.
+The immediate focus is a practical AI security layer for prompt validation. Container orchestration, RAG security, and broader platform deployment remain future areas rather than current requirements.
 
 ---
 
 ## 🎯 Project Goal
 
-LLMs are powerful, but simply connecting an application to an LLM is not enough for a secure production system.
+LLMs are powerful, but simply connecting an application to an LLM is not enough for a secure application.
 
 An LLM application can be attacked through:
 
@@ -35,19 +34,29 @@ An LLM application can be attacked through:
 * Excessive API requests
 * Unauthorized tool execution
 
-SecureLLM aims to provide a security layer between users and the LLM.
+SecureLLM provides a security layer between users and the LLM.
 
 ---
 
 # Local Development
 
-The repository currently contains a FastAPI security gateway and a React/Vite frontend. Run them in separate terminals.
+The repository contains a FastAPI security gateway and a React/Vite frontend. Start both services with one PowerShell command from the repository root:
+
+```powershell
+.\run.ps1
+```
+
+On the first run, the script creates `.venv`, installs the API requirements, and runs `npm ci` for the frontend. Later runs repeat installation only when `requirements.txt` or `package-lock.json` changes. It then starts both services as detached background processes without opening extra terminal windows. They continue running after the launching PowerShell is closed. The API is available at `http://localhost:8000`, and the frontend is normally available at `http://localhost:5173`. Service output is written to `logs/api.log`, `logs/api.error.log`, `logs/frontend.log`, and `logs/frontend.error.log`. The `logs/` directory is local-only and is ignored by Git.
+
+To start the services manually, use the commands below.
 
 ## Prerequisites
 
 - Python 3.12 or newer
 - Node.js 22 or newer
 - npm
+
+The first run of `run.ps1` installs the Python and frontend project dependencies automatically. Python and Node.js must still be installed and available on `PATH`.
 
 ## Start the API Gateway
 
@@ -62,6 +71,23 @@ python -m uvicorn app.main:app --reload --port 8000
 ```
 
 The API is available at `http://localhost:8000`. Open `http://localhost:8000/docs` for the interactive API documentation.
+
+## Start the LLM Service
+
+The frontend's LLM generation action uses `http://localhost:8001/generate`. Start the LLM service separately when you need model responses:
+
+```powershell
+docker build -t securellm-llm ./llm-service
+docker run --rm -p 8001:8001 --add-host=host.docker.internal:host-gateway securellm-llm
+```
+
+The container expects Ollama to be running on the host with the configured model available:
+
+```powershell
+ollama run qwen2.5:1.5b
+```
+
+The LLM service allows browser requests from the local frontend origins `http://localhost:5173` and `http://127.0.0.1:5173`. Docker Desktop and Ollama are not required for security analysis or for the frontend/API gateway to start. They are required only for the containerized LLM generation path. To use another Ollama endpoint or model, pass `OLLAMA_URL` and `OLLAMA_MODEL` to the container with `-e`.
 
 ## Start the Frontend
 
@@ -105,37 +131,21 @@ User
 Frontend
   ↓
 API Gateway
-  ↓
-AI Security Gateway
-  ↓
-RAG Service
-  ↓
-Vector Database
-  ↓
-vLLM
-  ↓
-Open-Source LLM
-  ↓
-Output Security
-  ↓
-User
+API Gateway
+      ↓
+Prompt Security Analysis
+      ├─ Allowed → Optional LLM Service → Response
+      └─ Blocked → Security Result
 ```
-
----
-
-# 🧠 What Are We Building?
-
-SecureLLM is essentially a **secure ChatGPT-like application**.
-
-A user can send a question through the frontend.
-
-Instead of sending the question directly to the LLM, the request first passes through the Security Gateway.
+      └─ Blocked → Security Result
 
 The Security Gateway analyzes the request and assigns a risk level.
 
 For example:
 
 ```text
+                        ↓
+                        Optional local LLM service
 User:
 "Explain Kubernetes networking"
 
@@ -291,35 +301,23 @@ The policy engine determines what action should be taken.
 
 ---
 
-# 📚 RAG Security
+# 📚 Future Security Extensions
 
-SecureLLM supports Retrieval-Augmented Generation (RAG).
+RAG and document security are planned extensions, not requirements of the current application.
 
-RAG allows the LLM to retrieve information from a knowledge base before generating a response.
+Future versions may validate documents and retrieved context before they influence an LLM response.
 
 ```text
-User Question
+User Prompt
       ↓
-Embedding
+Document and context validation
       ↓
-Vector Database
+Optional retrieval workflow
       ↓
-Relevant Documents
-      ↓
-LLM
-      ↓
-Response
+LLM response
 ```
 
-However, RAG introduces another security problem:
-
-### RAG Poisoning
-
-An attacker could insert malicious or manipulated documents into the knowledge base.
-
-SecureLLM aims to detect and manage potentially malicious documents before they influence the LLM.
-
-Future security capabilities include:
+Potential future capabilities include:
 
 * Document validation
 * Content scanning
@@ -330,35 +328,9 @@ Future security capabilities include:
 
 ---
 
-# ⚙️ What Does vLLM Do?
+# ☸️ Future Deployment
 
-vLLM is the **LLM inference and serving engine**.
-
-It is important to understand the difference:
-
-```text
-Llama / Mistral
-        ↓
-     Model
-      "Brain"
-
-vLLM
-        ↓
-Inference / Serving Engine
-      "Engine"
-```
-
-The project can use an open-source model such as Llama or Mistral.
-
-vLLM loads and serves the model and provides an API through which our application can send requests.
-
-This makes vLLM suitable for serving an LLM inside a Kubernetes environment.
-
----
-
-# ☸️ Kubernetes
-
-The complete application is designed to run inside Kubernetes.
+Kubernetes is a possible future deployment target. It is not required for the current local security tool.
 
 Example architecture:
 
@@ -378,16 +350,10 @@ Example architecture:
                  AI SECURITY GATEWAY
                           │
                           ▼
-                    RAG SERVICE
+                 OPTIONAL LLM SERVICE
                           │
                           ▼
-                    VECTOR DB
-                          │
-                          ▼
-                       vLLM
-                          │
-                          ▼
-                    LLM / GPU
+                    LOCAL MODEL RUNTIME
 ```
 
 Kubernetes provides:
@@ -402,7 +368,7 @@ Kubernetes provides:
 
 ---
 
-# 🔐 Kubernetes Security
+# 🔐 Future Platform Security
 
 SecureLLM also focuses on securing the Kubernetes environment.
 
@@ -441,9 +407,9 @@ RAG
    ↓
 Vector DB
 
-vLLM
-   ↑
-Only allowed services
+Optional LLM service
+      ↑
+Only allowed application services
 ```
 
 Unnecessary network communication should be blocked.
@@ -627,25 +593,14 @@ DETECT → QUARANTINE / BLOCK
 
 # 🧰 Technology Stack
 
-| Area                | Technology                        |
+| Area                | Current technology                |
 | ------------------- | --------------------------------- |
-| LLM                 | Llama / Mistral                   |
-| LLM Serving         | vLLM                              |
-| Backend             | Python / FastAPI                  |
-| AI Security         | Python                            |
-| RAG                 | LangChain / LlamaIndex            |
-| Embeddings          | Sentence Transformers             |
-| Vector Database     | Chroma / Qdrant                   |
-| Frontend            | React + TypeScript                |
+| Prompt tool         | React + Vite                      |
+| Security gateway    | Python / FastAPI                  |
+| Security analysis   | Python detectors and policies     |
+| Optional LLM        | Ollama with a local model         |
+| LLM service         | FastAPI in Docker                 |
 | Containers          | Docker                            |
-| Orchestration       | Kubernetes                        |
-| Packaging           | Helm                              |
-| Authentication      | JWT / OAuth                       |
-| Kubernetes Security | RBAC, NetworkPolicy, Pod Security |
-| Policy              | Kyverno / OPA                     |
-| Monitoring          | Prometheus + Grafana              |
-| Logging             | Loki / ELK                        |
-| Image Security      | Trivy                             |
 | CI/CD               | GitHub Actions                    |
 
 ---
@@ -654,45 +609,48 @@ DETECT → QUARANTINE / BLOCK
 
 The project will be developed incrementally.
 
-### Phase 1 — Basic LLM Application
+### Phase 1 — Prompt Security Tool
 
-* Connect frontend to backend
-* Connect backend to an open-source LLM
+* Prompt editor and analysis workflow
+* API gateway request validation
+* Clear allowed and blocked outcomes
 
-### Phase 2 — LLM Serving
-
-* Deploy model using vLLM
-* Expose inference API
-
-### Phase 3 — RAG
-
-* Add embeddings
-* Add vector database
-* Implement document retrieval
-
-### Phase 4 — AI Security Gateway
+### Phase 2 — AI Security Detection
 
 * Prompt injection detection
 * Jailbreak detection
-* PII detection
-* Risk scoring
-* Policy engine
+* PII and sensitive-data detection
+* System prompt leakage detection
+* Toxicity and malicious-intent detection
+* Risk scoring and policy decisions
 
-### Phase 5 — Output Security
+### Phase 3 — Protected LLM Responses
 
-* Response validation
-* Sensitive data filtering
-* Unsafe output detection
+* Send only allowed prompts to the optional LLM service
+* Validate generated responses
+* Add response safety and sensitive-data checks
 
-### Phase 6 — Kubernetes
+### Phase 4 — Security Operations
 
-* Containerize services
-* Kubernetes deployments
-* Services
-* Ingress
-* Helm
+* Security audit history
+* Configurable policies and thresholds
+* Health and dependency status
+* Test and attack-simulation coverage
 
-### Phase 7 — Kubernetes Security
+### Phase 5 — Future Context Security
+
+* RAG document validation
+* Retrieval and context security
+* Malicious document detection
+* Tool and agent action controls
+
+### Phase 6 — Future Deployment
+
+* Container orchestration
+* Service deployment manifests
+* Network and workload security
+
+### Phase 7 — Future Platform Security
 
 * RBAC
 * NetworkPolicies
@@ -729,7 +687,7 @@ The project will be developed incrementally.
 
 # 🌟 What Makes SecureLLM Different?
 
-SecureLLM combines three important areas:
+SecureLLM combines three practical areas:
 
 ```text
           AI
@@ -737,25 +695,23 @@ SecureLLM combines three important areas:
            │
     ┌──────┴──────┐
     │             │
-   LLM         AI Security
+ Prompt Tool  AI Security
     │             │
     └──────┬──────┘
            │
-      Kubernetes
+ Optional LLM
 ```
 
-Instead of building only an LLM application, the project focuses on building a **secure LLM platform running on Kubernetes**.
+Instead of building only an LLM application, the project focuses on building a **security tool that validates prompts and controls access to LLM responses**.
 
 The project therefore provides practical experience in:
 
-* LLM applications
-* LLM inference
-* RAG
 * AI security
+* Prompt validation
+* LLM application workflows
 * Backend development
 * Containers
-* Kubernetes
-* Cloud-native security
+* Future context and tool security
 * DevSecOps
 * Observability
 
@@ -768,11 +724,8 @@ SecureLLM is designed as a collaborative open-source project.
 Contributors can work on areas such as:
 
 * AI security detectors
-* RAG security
 * Backend APIs
 * Frontend
-* Kubernetes manifests
-* Helm charts
 * Security policies
 * Monitoring
 * Testing
@@ -789,10 +742,10 @@ See:
 
 # 🎯 Project Vision
 
-The long-term goal of SecureLLM is to create a practical, open-source reference architecture for deploying **secure LLM applications on Kubernetes**.
+The goal of SecureLLM is to become a practical, open-source AI security tool that validates prompts, detects common LLM threats, applies policy decisions, and protects model interactions.
 
-The project is intended for learning, experimentation, security research, and building production-oriented cloud-native AI systems.
+The project is intended for learning, experimentation, security research, and building safer AI application workflows. RAG, tool execution controls, and larger deployment platforms can be added after the core security workflow is mature.
 
-> Build LLM applications.
-> Secure them against AI attacks.
-> Deploy them securely on Kubernetes.
+> Validate prompts.
+> Detect AI threats.
+> Protect LLM interactions.

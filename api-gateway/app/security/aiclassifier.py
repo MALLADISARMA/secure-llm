@@ -6,21 +6,42 @@ user prompts into security categories.
 """
 
 from functools import lru_cache
+import re
 
 from transformers import pipeline
 
 
 MODEL_NAME = "facebook/bart-large-mnli"
+PROMPT_INJECTION_LABEL = "prompt injection"
+SYSTEM_PROMPT_LEAKAGE_LABEL = "system prompt leakage"
 
 SECURITY_LABELS = [
-    "prompt injection",
+    PROMPT_INJECTION_LABEL,
     "jailbreak attempt",
     "PII or sensitive information",
-    "system prompt leakage",
+    SYSTEM_PROMPT_LEAKAGE_LABEL,
     "toxic or abusive content",
     "malicious intent",
     "safe prompt",
 ]
+
+
+def _apply_explicit_security_signals(message: str, scores: dict) -> dict:
+    normalized = message.lower()
+
+    if re.search(r"\bignore\s+(all\s+)?previous\s+instructions\b", normalized):
+        scores[PROMPT_INJECTION_LABEL] = max(
+            scores[PROMPT_INJECTION_LABEL],
+            1.0,
+        )
+
+    if re.search(r"\b(reveal|tell|give|show)\b.*\b(password|secret|api key|token|system prompt)\b", normalized):
+        scores[SYSTEM_PROMPT_LEAKAGE_LABEL] = max(
+            scores[SYSTEM_PROMPT_LEAKAGE_LABEL],
+            1.0,
+        )
+
+    return scores
 
 
 @lru_cache(maxsize=1)
@@ -67,7 +88,9 @@ def classify_prompt(message: str) -> dict:
 
     scores = dict(zip(result["labels"], result["scores"]))
 
-    return {
+    scores = {
         label: scores.get(label, 0.0)
         for label in SECURITY_LABELS
     }
+
+    return _apply_explicit_security_signals(message, scores)
