@@ -19,6 +19,21 @@ def test_health_endpoint():
     }
 
 
+def test_chat_allows_cors_preflight():
+    response = client.options(
+        "/chat",
+        headers={
+            "Origin": "http://localhost:5173",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "content-type",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.headers.get("access-control-allow-origin") == "http://localhost:5173"
+    assert "POST" in response.headers.get("access-control-allow-methods", "")
+
+
 def test_chat_allows_safe_message():
     response = client.post("/chat", json={"message": "What is Kubernetes?"})
 

@@ -38,6 +38,10 @@ jobs:
           test -f frontend/package.json
           test -f frontend/package-lock.json
           test -d frontend/src
+          test -f run.ps1
+          test -f llm-service/requirements.txt
+          test -f llm-service/Dockerfile
+          test -f llm-service/app/main.py
           test -d specs
 
       # --------------------------------
@@ -59,6 +63,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install -r api-gateway/requirements.txt
+          python -m pip install -r llm-service/requirements.txt
 
       # --------------------------------
       # Run Tests
@@ -74,7 +79,16 @@ jobs:
         shell: bash
         env:
           PYTHONPATH: api-gateway
-        run: python -m compileall -q api-gateway/app tests
+        run: python -m compileall -q api-gateway/app llm-service/app tests
+
+      - name: Validate local launcher contract
+        shell: bash
+        run: |
+          grep -Fq 'Start-Process $pythonExecutable' run.ps1
+          grep -Fq 'Start-Process $npmExecutable' run.ps1
+          grep -Fq -- '-WindowStyle Hidden' run.ps1
+          grep -Fq -- '-RedirectStandardOutput $apiOutputLog' run.ps1
+          grep -Fq -- '-RedirectStandardError $frontendErrorLog' run.ps1
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
