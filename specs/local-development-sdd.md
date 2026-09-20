@@ -14,7 +14,7 @@ The repository-root `run.ps1` script:
 4. Runs `npm ci` when frontend dependencies are missing or the SHA-256 fingerprint of `frontend/package-lock.json` changes.
 5. Starts Uvicorn for `api-gateway/app/main.py` on port `8000`.
 6. Starts the Vite development server from `frontend/` on port `5173`.
-7. Starts both processes with hidden windows and redirects standard output and error to `logs/`.
+7. Starts both services as session-bound PowerShell jobs and redirects standard output and error to `logs/`.
 
 The `logs/` directory is ignored by Git because it contains machine-local runtime output.
 
@@ -30,4 +30,17 @@ The launcher contract is covered by `tests/test_run_script.py`, which verifies h
 
 ## Failure Handling
 
-The launcher reports startup URLs immediately, while service failures are recorded in `logs/api.error.log` or `logs/frontend.error.log`. A developer should inspect those files when a service is not reachable. If analysis succeeds but generation fails, verify that the LLM container is listening on `8001`, Ollama is running, and the configured model is installed.
+The launcher reports startup URLs immediately and remains active while the API and frontend jobs run. Pressing `Ctrl+C` or closing the launcher terminal stops those jobs. Service failures are recorded in `logs/api.error.log` or `logs/frontend.error.log`. A developer should inspect those files when a service is not reachable. If analysis succeeds but generation fails, verify that the LLM container is listening on `8001`, Ollama is running, and the configured model is installed.
+
+## Local Redis History
+
+Redis is an optional backend dependency for analysis history. Kubernetes is not required.
+
+Start Redis with Docker Desktop running:
+
+```powershell
+docker run -d --name securellm-redis -p 6379:6379 redis:7-alpine
+$env:REDIS_URL = "redis://localhost:6379/0"
+```
+
+The gateway uses `GET /history` and `DELETE /history` with the `X-Session-ID` header. History is limited to 50 records per browser session and expires after seven days. If Redis is stopped, `/chat` continues security analysis while history becomes unavailable.
