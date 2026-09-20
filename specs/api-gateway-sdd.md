@@ -116,6 +116,25 @@ npm run build
 
 Use `http://127.0.0.1:8000/docs` to execute both endpoints interactively. The root health endpoint can also be opened directly in a browser.
 
+## Analysis History
+
+The gateway stores completed security analyses in Redis using session-scoped keys:
+
+```text
+securellm:history:{session_id}
+```
+
+The frontend stores a random session ID in `localStorage` and sends it as `X-Session-ID`. The gateway validates this value before constructing a Redis key. Each session is limited to 50 records and history keys expire after seven days. Records include the prompt, status, score, highest-risk category, complete analysis, record ID, session ID, and a UTC timestamp. LLM responses are not stored.
+
+### History endpoints
+
+- `GET /history` returns the current session's records, newest first.
+- `DELETE /history` deletes only the current session's records.
+
+Both endpoints require `X-Session-ID`. Redis is optional for `/chat`: connection failures do not change security analysis or block the normal response. History endpoints report unavailable storage when Redis cannot be reached.
+
+The Redis URL is configured with `REDIS_URL`, defaulting to `redis://localhost:6379/0`. Redis is never exposed to the frontend. Prompts may contain PII or secrets, so production deployments require authentication, TLS, restricted network access, authorization, and retention controls.
+
 ## Future Changes
 
 - Add model loading configuration and health checks for production deployments.

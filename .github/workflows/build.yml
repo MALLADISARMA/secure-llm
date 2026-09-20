@@ -84,11 +84,12 @@ jobs:
       - name: Validate local launcher contract
         shell: bash
         run: |
-          grep -Fq 'Start-Process $pythonExecutable' run.ps1
-          grep -Fq 'Start-Process $npmExecutable' run.ps1
-          grep -Fq -- '-WindowStyle Hidden' run.ps1
-          grep -Fq -- '-RedirectStandardOutput $apiOutputLog' run.ps1
-          grep -Fq -- '-RedirectStandardError $frontendErrorLog' run.ps1
+          grep -Fq 'Start-Job -Name "SecureLLM-API"' run.ps1
+          grep -Fq 'Start-Job -Name "SecureLLM-Frontend"' run.ps1
+          grep -Fq 'Wait-Job -Job $apiJob, $frontendJob' run.ps1
+          grep -Fq 'Stop-Job -Job $apiJob, $frontendJob' run.ps1
+          grep -Fq '& $python -m uvicorn app.main:app' run.ps1
+          grep -Fq '& $npm run dev' run.ps1
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
