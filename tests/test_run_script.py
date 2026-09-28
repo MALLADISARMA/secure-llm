@@ -5,13 +5,13 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 RUN_SCRIPT = REPOSITORY_ROOT / "run.ps1"
 
 
-def test_run_script_starts_services_without_visible_terminals():
+def test_run_script_keeps_services_bound_to_the_launcher_session():
     script = RUN_SCRIPT.read_text(encoding="utf-8")
 
-    assert "Start-Process $pythonExecutable" in script
-    assert "Start-Process $npmExecutable" in script
-    assert "-WindowStyle Hidden" in script
-    assert "-NoExit" not in script
+    assert 'Start-Job -Name "SecureLLM-API"' in script
+    assert 'Start-Job -Name "SecureLLM-Frontend"' in script
+    assert "Wait-Job -Job $apiJob, $frontendJob" in script
+    assert "Stop-Job -Job $apiJob, $frontendJob" in script
 
 
 def test_run_script_bootstraps_backend_and_frontend_dependencies():
@@ -41,5 +41,5 @@ def test_run_script_uses_expected_service_directories():
 
     assert 'Join-Path $root "api-gateway"' in script
     assert 'Join-Path $root "frontend"' in script
-    assert '"-m", "uvicorn", "app.main:app"' in script
-    assert '"run", "dev"' in script
+    assert "& $python -m uvicorn app.main:app" in script
+    assert "& $npm run dev" in script

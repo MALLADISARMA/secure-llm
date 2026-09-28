@@ -42,7 +42,7 @@ Detects abusive, hateful, or threatening content.
 
 ## API Integration
 
-The `POST /chat` endpoint invokes `is_unsafe_message`, which delegates to `analyze_prompt`. The request is blocked when any of the six category scores reaches the threshold. The blocked response uses the generic reason `Potentially unsafe content detected` because the current API does not expose detector-specific reasons.
+The security policy exposes `is_unsafe_message`, which delegates to `analyze_prompt`. The `POST /chat` endpoint calls the analyzer directly. The request is blocked when any of the six category scores reaches the threshold. The blocked response uses the generic reason `Potentially unsafe content detected` because the current API does not expose detector-specific reasons.
 
 ## Testing
 
@@ -51,8 +51,9 @@ Tests are located in `tests/test_security_detectors.py`, `tests/test_analyzer.py
 Run from the repository root after installing the API and test dependencies:
 
 ```powershell
+$env:PYTHONPATH = "api-gateway"
 python -m pip install -r api-gateway/requirements.txt pytest httpx
-python -m pytest tests
+python -m pytest -q tests
 ```
 
 ## Limitations
