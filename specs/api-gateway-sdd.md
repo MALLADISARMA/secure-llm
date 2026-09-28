@@ -103,7 +103,8 @@ python -m uvicorn app.main:app --reload
 From the repository root, run the backend checks with:
 
 ```powershell
-python -m pytest -q
+$env:PYTHONPATH = "api-gateway"
+python -m pytest -q tests
 ```
 
 From `frontend/`, run the frontend checks with:

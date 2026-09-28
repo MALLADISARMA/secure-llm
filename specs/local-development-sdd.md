@@ -24,6 +24,8 @@ The launcher requires Python with the API dependencies installed and Node.js/npm
 
 The optional LLM service runs on port `8001` in Docker and calls Ollama on the host at `host.docker.internal:11434`. Its Ollama endpoint and model can be overridden with `OLLAMA_URL` and `OLLAMA_MODEL`. It allows requests from the local frontend origins so the browser can call `/generate`. Security analysis and frontend startup do not depend on the LLM container.
 
+The launcher is a Windows PowerShell entry point. Linux and macOS contributors should start the API and frontend manually using the commands in `README.md`.
+
 ## Verification
 
 The launcher contract is covered by `tests/test_run_script.py`, which verifies hidden process startup, log redirection, expected service directories, and the Uvicorn/Vite commands. GitHub Actions also checks that the launcher and LLM service files exist and validates the launcher contract with shell assertions.

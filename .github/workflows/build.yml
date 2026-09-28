@@ -35,6 +35,10 @@ jobs:
           test -f api-gateway/requirements.txt
           test -d api-gateway/app
           test -d tests
+          test -f README.md
+          test -f LICENSE
+          test -f CONTRIBUTING.md
+          test -f SECURITY.md
           test -f frontend/package.json
           test -f frontend/package-lock.json
           test -d frontend/src
