@@ -16,6 +16,14 @@ The repository-root `run.ps1` script:
 6. Starts the Vite development server from `frontend/` on port `5173`.
 7. Starts both services as session-bound PowerShell jobs and redirects standard output and error to `logs/`.
 
+Run the script from the repository root in Windows PowerShell with this command:
+
+```powershell
+.\run.ps1
+```
+
+The launcher starts only the API gateway and frontend. It does not start Redis, Docker, Ollama, or the optional LLM container.
+
 The `logs/` directory is ignored by Git because it contains machine-local runtime output.
 
 ## Runtime Requirements

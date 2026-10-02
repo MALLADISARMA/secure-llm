@@ -47,6 +47,8 @@ def test_readme_documents_supported_checks_and_project_entry_points():
         "CONTRIBUTING.md",
         "SECURITY.md",
         "Apache License 2.0",
+        "### Start the API and frontend",
+        "It does not start Redis, Ollama, Docker, or the LLM container.",
     ):
         assert expected_text in readme
 
