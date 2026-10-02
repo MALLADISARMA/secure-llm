@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Local development provides one Windows PowerShell entry point for the API Gateway and React/Vite frontend. The launcher reduces repeated terminal setup while keeping service output available for troubleshooting.
+Local development provides one Windows PowerShell entry point for the API Gateway and React/Vite frontend. Docker Desktop runs Redis and the optional LLM service so a fresh clone can use the complete local UI workflow.
 
 ## One-Command Launcher
 
@@ -20,7 +20,7 @@ The `logs/` directory is ignored by Git because it contains machine-local runtim
 
 ## Runtime Requirements
 
-The launcher requires Python with the API dependencies installed and Node.js/npm with frontend dependencies installed. It does not start Docker, Ollama, or the LLM service.
+The launcher requires Python with the API dependencies installed and Node.js/npm with frontend dependencies installed. It does not start Docker, Ollama, Redis, or the LLM service; contributors start those services separately using the commands in `README.md`.
 
 The optional LLM service runs on port `8001` in Docker and calls Ollama on the host at `host.docker.internal:11434`. Its Ollama endpoint and model can be overridden with `OLLAMA_URL` and `OLLAMA_MODEL`. It allows requests from the local frontend origins so the browser can call `/generate`. Security analysis and frontend startup do not depend on the LLM container.
 
@@ -36,7 +36,7 @@ The launcher reports startup URLs immediately and remains active while the API a
 
 ## Local Redis History
 
-Redis is an optional backend dependency for analysis history. Kubernetes is not required.
+Redis is a Docker-backed dependency for the complete history workflow, but it is optional for prompt analysis. Kubernetes is not required.
 
 Start Redis with Docker Desktop running:
 
@@ -44,5 +44,14 @@ Start Redis with Docker Desktop running:
 docker run -d --name securellm-redis -p 6379:6379 redis:7-alpine
 $env:REDIS_URL = "redis://localhost:6379/0"
 ```
+
+Build and run the LLM image from the repository root:
+
+```powershell
+docker build -t securellm-llm:local ./llm-service
+docker run -d --name securellm-llm -p 8001:8001 --add-host=host.docker.internal:host-gateway securellm-llm:local
+```
+
+Ollama must be installed and running on the Windows host with the configured `qwen2.5:1.5b` model available. The container uses `host.docker.internal` to call Ollama.
 
 The gateway uses `GET /history` and `DELETE /history` with the `X-Session-ID` header. History is limited to 50 records per browser session and expires after seven days. If Redis is stopped, `/chat` continues security analysis while history becomes unavailable.
