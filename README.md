@@ -99,6 +99,16 @@ ollama pull qwen2.5:1.5b
 
 The repository does not currently provide a single Docker Compose file for the gateway and frontend. The supported local setup runs the API gateway and Vite UI on Windows, while Docker runs Redis and the optional LLM service.
 
+### Start the API and frontend
+
+Open PowerShell in the repository root (`secure-llm/`) and run:
+
+```powershell
+.\run.ps1
+```
+
+On first run, the script creates `.venv`, installs the API requirements and frontend npm packages, then starts the FastAPI gateway at `http://localhost:8000` and the Vite frontend at `http://localhost:5173`. Press `Ctrl+C` or close that PowerShell window to stop both processes. It does not start Redis, Ollama, Docker, or the LLM container.
+
 ## Run the Complete Local UI
 
 Use these steps from a fresh clone. Keep Docker Desktop running for the entire session.
