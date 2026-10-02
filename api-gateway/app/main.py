@@ -1,3 +1,4 @@
+
 import os
 
 from fastapi import FastAPI, Header, HTTPException
@@ -6,6 +7,7 @@ from pydantic import BaseModel, Field
 
 from app.history import HistoryService
 from app.security.analyzer import analyze_prompt
+from app.security.vulnerability.services import VulnerabilityService
 
 
 app = FastAPI(
@@ -27,9 +29,15 @@ history_service = HistoryService(
     redis_url=os.getenv("REDIS_URL", "redis://localhost:6379/0")
 )
 
+vulnerability_service = VulnerabilityService()
+
 
 class ChatRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=10_000)
+
+
+class VulnerabilityScanRequest(BaseModel):
+    path: str = Field(..., min_length=1)
 
 
 def get_session_id(x_session_id: str | None) -> str:
@@ -57,7 +65,13 @@ def home():
     }
 
 
-@app.post("/chat")
+@app.post(
+    "/chat",
+    responses={
+        400: {"description": "Missing or invalid X-Session-ID header"},
+        422: {"description": "Invalid request body or blank message"},
+    },
+)
 def chat(
     request: ChatRequest,
     x_session_id: str | None = Header(default=None),
@@ -101,7 +115,10 @@ def chat(
     return response
 
 
-@app.get("/history")
+@app.get(
+    "/history",
+    responses={400: {"description": "Missing or invalid X-Session-ID header"}},
+)
 def get_history(x_session_id: str | None = Header(default=None)):
     session_id = get_session_id(x_session_id)
     records = history_service.get(session_id)
@@ -121,7 +138,10 @@ def get_history(x_session_id: str | None = Header(default=None)):
     }
 
 
-@app.delete("/history")
+@app.delete(
+    "/history",
+    responses={400: {"description": "Missing or invalid X-Session-ID header"}},
+)
 def clear_history(x_session_id: str | None = Header(default=None)):
     session_id = get_session_id(x_session_id)
     deleted = history_service.delete(session_id)
@@ -136,3 +156,21 @@ def clear_history(x_session_id: str | None = Header(default=None)):
         "status": "success",
         "message": "History cleared successfully",
     }
+
+
+@app.post(
+    "/security/scan",
+    responses={
+        422: {"description": "Invalid filesystem scan request"},
+        500: {"description": "Trivy scanning failed"},
+    },
+)
+def scan_vulnerabilities(request: VulnerabilityScanRequest):
+    try:
+        return vulnerability_service.scan(request.path)
+
+    except RuntimeError as error:
+        raise HTTPException(
+            status_code=500,
+            detail=str(error),
+        ) from error

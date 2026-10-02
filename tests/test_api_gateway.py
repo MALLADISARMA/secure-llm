@@ -189,3 +189,41 @@ def test_chat_rejects_invalid_message_length(message):
     )
 
     assert response.status_code == 422
+
+
+def test_vulnerability_scan_returns_service_result(monkeypatch):
+    expected_result = {
+        "summary": {
+            "critical": 1,
+            "high": 0,
+            "medium": 0,
+            "low": 0,
+            "unknown": 0,
+        },
+        "vulnerabilities": [],
+    }
+    scanned_paths = []
+
+    def fake_scan(path):
+        scanned_paths.append(path)
+        return expected_result
+
+    monkeypatch.setattr(main_module.vulnerability_service, "scan", fake_scan)
+
+    response = client.post("/security/scan", json={"path": "."})
+
+    assert response.status_code == 200
+    assert response.json() == expected_result
+    assert scanned_paths == ["."]
+
+
+def test_vulnerability_scan_reports_trivy_runtime_error(monkeypatch):
+    def fail_scan(_path):
+        raise RuntimeError("Trivy could not scan the requested path")
+
+    monkeypatch.setattr(main_module.vulnerability_service, "scan", fail_scan)
+
+    response = client.post("/security/scan", json={"path": "."})
+
+    assert response.status_code == 500
+    assert response.json() == {"detail": "Trivy could not scan the requested path"}

@@ -16,11 +16,53 @@ RAG document scanning, tool authorization, Kubernetes deployment, and other plat
 
 ## Architecture
 
-```text
-Browser UI -> FastAPI gateway -> prompt analysis -> allowed or blocked result
-                    |
-                    +-> optional generation service -> Ollama
+```mermaid
+flowchart TB
+    subgraph LocalApp["Local application"]
+        Browser["React + Vite browser UI<br/>Dashboard / Analyzer / History"]
+        Gateway["FastAPI API gateway<br/>localhost:8000"]
+        Chat["POST /chat<br/>X-Session-ID"]
+        Analyzer["Security analyzer<br/>six categories, threshold 0.70"]
+        Classifier["Hugging Face zero-shot classifier<br/>facebook/bart-large-mnli"]
+        Decision{"Any category detected?"}
+        HistoryAPI["GET /history<br/>DELETE /history"]
+        History["Session-scoped HistoryService"]
+        Redis[("Optional Redis<br/>50 records, 7-day TTL")]
+        LLM["LLM service<br/>POST /generate<br/>localhost:8001"]
+        Ollama["Ollama<br/>qwen2.5:1.5b by default"]
+        ApiScan["POST /security/scan<br/>API-only route"]
+        VulnService["VulnerabilityService"]
+        TrivyAPI["TrivyScanner<br/>local Trivy binary"]
+
+        Browser -->|"prompt + session ID"| Gateway
+        Gateway --> Chat --> Analyzer --> Classifier --> Decision
+        Decision -->|"allowed or blocked analysis"| Browser
+        Chat --> History
+        Browser -->|"GET or DELETE /history + session ID"| Gateway
+        Gateway --> HistoryAPI --> History
+        History --> Redis
+        Browser -->|"allowed prompts only; separate request"| LLM
+        LLM --> Ollama
+        Ollama -->|"generated response"| Browser
+        Gateway --> ApiScan --> VulnService --> TrivyAPI
+    end
+
+    subgraph RepositoryScan["GitHub Actions repository scan"]
+        Trigger{"Monday schedule<br/>or manual dispatch"}
+        Checkout["Checkout repository"]
+        RepoTrivy["Trivy filesystem scan<br/>vulnerabilities only"]
+        Summary["Run summary<br/>status + severity counts"]
+        Artifact["Actions artifact<br/>JSON + text reports<br/>30-day retention"]
+
+        Trigger --> Checkout --> RepoTrivy
+        RepoTrivy --> Summary
+        RepoTrivy --> Artifact
+    end
 ```
+
+The browser sends prompts to the gateway for analysis. The gateway returns an allow/block decision and saves the analysis to the current browser session's history. Only when the result is allowed does the browser make a separate request to the LLM service; the LLM service calls Ollama. Redis is optional and is used only for history. The gateway and LLM service are separate processes; the LLM service is optional.
+
+The GitHub Actions Trivy scan is independent of the running application: it scans the checked-out repository and does not call the gateway or require application services. The gateway also exposes `POST /security/scan`, which invokes the local Trivy scanner; it is not called by the browser and is separate from the scheduled Actions scan.
 
 The gateway API runs at `http://localhost:8000`; its interactive API documentation is at `http://localhost:8000/docs`. The frontend runs at `http://localhost:5173`. Optional generation uses `http://localhost:8001/generate`.
 
@@ -162,9 +204,10 @@ History is limited to 50 records per browser session and expires after seven day
 
 ## Run Checks
 
-From the repository root:
+From the repository root, install both Python requirement sets into the active environment before running the complete suite. The LLM-service requirements are needed by its service tests even when Ollama itself is not running:
 
 ```powershell
+python -m pip install -r api-gateway/requirements.txt -r llm-service/requirements.txt
 $env:PYTHONPATH = "api-gateway"
 python -m pytest -q tests
 ```
@@ -178,6 +221,16 @@ npm run build
 ```
 
 GitHub Actions runs these checks, validates Python syntax and the local launcher contract, and requires pull requests to update a Markdown file under `specs/`.
+
+## Repository Vulnerability Scan
+
+The separate `.github/workflows/trivy-scan.yml` workflow scans the entire checked-out repository filesystem for vulnerabilities only. It runs every Monday at 04:00 UTC and can also be started manually:
+
+1. Open the repository's **Actions** tab.
+2. Select **SecureLLM Trivy Scan**.
+3. Choose **Run workflow** and select a branch.
+
+The workflow summary shows whether the scan completed, a count for each Trivy severity, and a short result summary. Download the `trivy-report-*` artifact from the run for the full JSON and human-readable reports; artifacts are retained for 30 days. Vulnerability findings appear in the report but do not fail the workflow. Trivy setup, scan execution, or report-generation errors do fail it. This workflow sends no email and requires no GitHub secrets.
 
 ## Contributing
 

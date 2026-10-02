@@ -1,0 +1,158 @@
+name: SecureLLM Trivy Scan
+
+on:
+  schedule:
+    - cron: "0 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  trivy-scan:
+    name: Weekly filesystem vulnerability scan
+    runs-on: ubuntu-latest
+
+    steps:
+      # Check out the complete repository for filesystem scanning.
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Install the latest stable Trivy release using Aqua Security's setup action.
+      - name: Set up latest Trivy
+        id: setup-trivy
+        uses: aquasecurity/setup-trivy@e07451d2e059ed86c2870430ea286b3a9e0bf241
+
+      # Findings do not fail the scan step; genuine Trivy errors still return non-zero.
+      - name: Scan repository for vulnerabilities
+        id: trivy-scan
+        run: trivy fs --scanners vuln --exit-code 0 --format json --output trivy-report.json .
+
+      # Always create a readable summary, including when setup or scanning failed.
+      - name: Create human-readable report
+        id: report
+        if: always()
+        env:
+          SETUP_OUTCOME: ${{ steps.setup-trivy.outcome }}
+          SCAN_OUTCOME: ${{ steps.trivy-scan.outcome }}
+          REPOSITORY: ${{ github.repository }}
+          REF: ${{ github.ref }}
+        run: |
+          printf '%s\n' "Trivy report summary generation failed; see the workflow logs." > trivy-report.txt
+          python - <<'PY'
+          import json
+          import os
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          report_path = Path("trivy-report.json")
+          severities = ["CRITICAL", "HIGH", "MEDIUM", "LOW", "UNKNOWN"]
+          counts = {severity: None for severity in severities}
+          vulnerabilities = []
+          parse_error = None
+
+          if report_path.exists():
+              try:
+                  data = json.loads(report_path.read_text(encoding="utf-8"))
+                  counts = {severity: 0 for severity in severities}
+                  for result in data.get("Results") or []:
+                      for vulnerability in result.get("Vulnerabilities") or []:
+                          severity = str(vulnerability.get("Severity", "UNKNOWN")).upper()
+                          if severity not in counts:
+                              severity = "UNKNOWN"
+                          counts[severity] += 1
+                          vulnerabilities.append((result.get("Target", ""), vulnerability))
+              except (OSError, json.JSONDecodeError, AttributeError, TypeError) as error:
+                  parse_error = str(error)
+              else:
+                parse_error = "Trivy JSON report was not produced"
+
+          setup_outcome = os.environ.get("SETUP_OUTCOME", "unknown")
+          scan_outcome = os.environ.get("SCAN_OUTCOME", "unknown")
+          status = "completed" if setup_outcome == "success" and scan_outcome == "success" and parse_error is None else "failed"
+          scan_time = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+          count_lines = [
+              f"{severity.title()} vulnerability count: {counts[severity] if counts[severity] is not None else 'N/A'}"
+              for severity in severities
+          ]
+
+          if parse_error:
+              summary = f"The Trivy report could not be parsed: {parse_error}"
+          elif status == "failed":
+              summary = f"Trivy setup outcome: {setup_outcome}; scan outcome: {scan_outcome}."
+          elif not vulnerabilities:
+              summary = "The filesystem scan completed; no vulnerabilities were found."
+          else:
+              summary = f"The filesystem scan completed and found {len(vulnerabilities)} vulnerabilities."
+
+          lines = [
+              "SecureLLM Trivy vulnerability scan",
+              f"Repository: {os.environ['REPOSITORY']}",
+              f"Branch/ref: {os.environ['REF']}",
+              f"Scan date/time: {scan_time}",
+              f"Trivy scan status: {status}",
+              *count_lines,
+              f"Summary: {summary}",
+              "",
+              "Detailed findings:",
+          ]
+
+          if parse_error:
+              lines.append("Findings are unavailable because the JSON report could not be parsed.")
+          elif vulnerabilities:
+              for target, vulnerability in vulnerabilities:
+                  lines.extend([
+                      f"- [{vulnerability.get('Severity', 'UNKNOWN')}] {vulnerability.get('VulnerabilityID', 'Unknown ID')}",
+                      f"  Target/package: {target} / {vulnerability.get('PkgName', 'Unknown package')}",
+                      f"  Installed: {vulnerability.get('InstalledVersion', 'Unknown')}; fixed: {vulnerability.get('FixedVersion') or 'no fix listed'}",
+                      f"  Title: {vulnerability.get('Title') or 'No title provided'}",
+                  ])
+          elif counts["CRITICAL"] is None:
+              lines.append("Findings are unavailable because a JSON report was not produced or could not be parsed.")
+          else:
+              lines.append("No vulnerabilities found.")
+
+          Path("trivy-report.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+          action_summary = [
+              "## Trivy vulnerability scan",
+              "",
+              f"- **Repository:** {os.environ['REPOSITORY']}",
+              f"- **Branch/ref:** {os.environ['REF']}",
+              f"- **Scan date/time:** {scan_time}",
+              f"- **Scan status:** {status}",
+              "",
+              "| Severity | Vulnerabilities |",
+              "| --- | ---: |",
+          ]
+          action_summary.extend(
+              f"| {severity.title()} | {counts[severity] if counts[severity] is not None else 'N/A'} |"
+              for severity in severities
+          )
+          action_summary.extend([
+              "",
+              f"**Summary:** {summary}",
+              "",
+              "Download the `trivy-report-*` artifact below for the complete JSON and text reports.",
+          ])
+          Path(os.environ["GITHUB_STEP_SUMMARY"]).write_text("\n".join(action_summary) + "\n", encoding="utf-8")
+          if parse_error:
+              raise SystemExit(f"Trivy report could not be parsed: {parse_error}")
+          PY
+
+      # Preserve both machine-readable and human-readable reports for download.
+      - name: Upload Trivy reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-report-${{ github.run_id }}
+          path: |
+            trivy-report.json
+            trivy-report.txt
+          if-no-files-found: warn
+          retention-days: 30
+
+      # Findings are informational; setup and execution failures remain workflow failures.
+      - name: Fail if Trivy setup or execution failed
+        if: always() && (steps.setup-trivy.outcome != 'success' || steps.trivy-scan.outcome != 'success' || steps.report.outcome != 'success')
+        run: exit 1

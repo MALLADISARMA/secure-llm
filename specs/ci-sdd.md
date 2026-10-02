@@ -13,6 +13,10 @@ The workflow is defined in `.github/workflows/build.yml` and runs on:
 
 The workflow uses Ubuntu and Python 3.12.
 
+The separate `.github/workflows/trivy-scan.yml` workflow checks out and scans the entire repository filesystem for vulnerabilities only. It runs weekly at 04:00 UTC on Monday and supports manual dispatch. Aqua Security's official setup action installs the latest stable Trivy release. The scan writes JSON and human-readable reports, uploads both as a 30-day artifact, and publishes scan status and severity counts in the GitHub Actions run summary. It does not send email or require repository secrets. Vulnerability findings do not fail the workflow; Trivy setup, execution, or report-generation failures do.
+
+The workflow contract is checked by `tests/test_repository_contract.py` to ensure it remains separate from the build workflow, supports its scheduled and manual triggers, scans vulnerabilities only, uploads reports, and does not depend on email secrets.
+
 ## Pipeline Stages
 
 1. Check out the repository with full history.
