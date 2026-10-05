@@ -1,4 +1,9 @@
 from pathlib import Path
+import json
+import os
+import subprocess
+import sys
+import textwrap
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
@@ -86,3 +91,42 @@ def test_trivy_workflow_scans_and_reports_without_email():
         "secrets.EMAIL_",
     ):
         assert forbidden_text not in workflow
+
+
+def test_trivy_report_script_accepts_valid_json_without_vulnerabilities(tmp_path):
+    workflow_path = REPOSITORY_ROOT / ".github" / "workflows" / "trivy-scan.yml"
+    workflow = workflow_path.read_text(encoding="utf-8")
+    report_script = workflow.split("python - <<'PY'\n", 1)[1].split("\n          PY", 1)[0]
+    report_script = textwrap.dedent(report_script)
+    (tmp_path / "trivy-report.json").write_text(
+        json.dumps({"Results": []}),
+        encoding="utf-8",
+    )
+    summary_path = tmp_path / "step-summary.md"
+    environment = os.environ.copy()
+    environment.update(
+        {
+            "SETUP_OUTCOME": "success",
+            "SCAN_OUTCOME": "success",
+            "REPOSITORY": "MALLADISARMA/secure-llm",
+            "REF": "refs/heads/main",
+            "GITHUB_STEP_SUMMARY": str(summary_path),
+        }
+    )
+
+    result = subprocess.run(
+        [sys.executable, "-c", report_script],
+        cwd=tmp_path,
+        env=environment,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert "Trivy scan status: completed" in (tmp_path / "trivy-report.txt").read_text(
+        encoding="utf-8"
+    )
+    assert "The filesystem scan completed; no vulnerabilities were found." in summary_path.read_text(
+        encoding="utf-8"
+    )

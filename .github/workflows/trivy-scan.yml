@@ -51,6 +51,9 @@ jobs:
           vulnerabilities = []
           parse_error = None
 
+          if not report_path.exists():
+              parse_error = "Trivy JSON report was not produced"
+
           if report_path.exists():
               try:
                   data = json.loads(report_path.read_text(encoding="utf-8"))
@@ -64,8 +67,6 @@ jobs:
                           vulnerabilities.append((result.get("Target", ""), vulnerability))
               except (OSError, json.JSONDecodeError, AttributeError, TypeError) as error:
                   parse_error = str(error)
-              else:
-                parse_error = "Trivy JSON report was not produced"
 
           setup_outcome = os.environ.get("SETUP_OUTCOME", "unknown")
           scan_outcome = os.environ.get("SCAN_OUTCOME", "unknown")
