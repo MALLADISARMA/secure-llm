@@ -43,7 +43,7 @@ def test_readme_documents_supported_checks_and_project_entry_points():
         "DELETE /history",
         "GitHub Actions repository scan",
         "Monday at 04:00 UTC",
-        "retained for 30 days",
+        "Code scanning alerts",
         "CONTRIBUTING.md",
         "SECURITY.md",
         "Apache License 2.0",
@@ -61,7 +61,7 @@ def test_all_sdd_documents_are_markdown_files():
     assert all(path.suffix == ".md" for path in specs_directory.iterdir())
 
 
-def test_trivy_workflow_scans_and_reports_without_email():
+def test_trivy_workflow_uploads_sarif_findings_without_email():
     workflow_path = REPOSITORY_ROOT / ".github" / "workflows" / "trivy-scan.yml"
     workflow = workflow_path.read_text(encoding="utf-8")
 
@@ -69,13 +69,11 @@ def test_trivy_workflow_scans_and_reports_without_email():
         "  schedule:",
         '    - cron: "0 4 * * 1"',
         "  workflow_dispatch:",
-        "permissions:\n  contents: read",
-        "trivy fs --scanners vuln --exit-code 0 --format json --output trivy-report.json .",
-        "GITHUB_STEP_SUMMARY",
-        "uses: actions/upload-artifact@v4",
-        "trivy-report.json",
-        "trivy-report.txt",
-        "retention-days: 30",
+        "  security-events: write",
+        "trivy fs --scanners vuln --exit-code 0 --format sarif --output trivy-results.sarif .",
+        "uses: github/codeql-action/upload-sarif@v3",
+        "sarif_file: trivy-results.sarif",
+        "category: trivy-filesystem",
     ):
         assert expected_text in workflow
 
@@ -84,5 +82,8 @@ def test_trivy_workflow_scans_and_reports_without_email():
         "action-send-mail",
         "secrets.SMTP_",
         "secrets.EMAIL_",
+        "trivy-report",
+        "GITHUB_STEP_SUMMARY",
+        "uses: actions/upload-artifact@v4",
     ):
         assert forbidden_text not in workflow

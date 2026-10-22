@@ -51,12 +51,10 @@ flowchart TB
         Trigger{"Monday schedule<br/>or manual dispatch"}
         Checkout["Checkout repository"]
         RepoTrivy["Trivy filesystem scan<br/>vulnerabilities only"]
-        Summary["Run summary<br/>status + severity counts"]
-        Artifact["Actions artifact<br/>JSON + text reports<br/>30-day retention"]
+        Sarif["SARIF vulnerability findings"]
+        CodeSecurity["GitHub Code Security"]
 
-        Trigger --> Checkout --> RepoTrivy
-        RepoTrivy --> Summary
-        RepoTrivy --> Artifact
+        Trigger --> Checkout --> RepoTrivy --> Sarif --> CodeSecurity
     end
 ```
 
@@ -240,7 +238,7 @@ The separate `.github/workflows/trivy-scan.yml` workflow scans the entire checke
 2. Select **SecureLLM Trivy Scan**.
 3. Choose **Run workflow** and select a branch.
 
-The workflow summary shows whether the scan completed, a count for each Trivy severity, and a short result summary. Download the `trivy-report-*` artifact from the run for the full JSON and human-readable reports; artifacts are retained for 30 days. Vulnerability findings appear in the report but do not fail the workflow. Trivy setup, scan execution, or report-generation errors do fail it. This workflow sends no email and requires no GitHub secrets.
+The workflow uploads Trivy's SARIF findings to **Security → Code scanning alerts**. Vulnerability findings do not fail the workflow; Trivy setup, scan execution, or SARIF upload errors do. The workflow sends no email and requires no repository secrets. GitHub Code Security must be available and enabled for the repository to display uploaded alerts.
 
 ## Contributing
 
