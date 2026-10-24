@@ -1,0 +1,33 @@
+site_name: SecureLLM
+site_description: Project documentation for the SecureLLM prompt security gateway
+site_url: https://malladisarma.github.io/secure-llm/
+repo_url: https://github.com/MALLADISARMA/secure-llm
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - navigation.top
+    - search.highlight
+    - content.code.copy
+
+nav:
+  - Overview: index.md
+  - Getting started: getting-started.md
+  - Product guide:
+      - Features: features.md
+      - Security analysis: security-analysis.md
+  - Architecture: architecture.md
+  - API reference: api-reference.md
+  - Technology choices: technology-stack.md
+  - Security and limitations: security-and-limitations.md
+  - Development: development.md
+
+markdown_extensions:
+  - admonition
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.superfences
