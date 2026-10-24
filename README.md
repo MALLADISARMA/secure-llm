@@ -4,6 +4,17 @@ SecureLLM is an open-source prompt security gateway for LLM applications. It ana
 
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
 
+## Documentation
+
+The project documentation explains the architecture, security checks, frontend
+features, API, local setup, and technology choices:
+
+- [Browse the documentation source](docs/index.md).
+- [Run the documentation site locally](docs/development.md#documentation-site).
+- The GitHub Pages site is published from `main` by
+  [the documentation workflow](.github/workflows/docs.yml) after Pages is
+  configured to use GitHub Actions in the repository settings.
+
 ## Current Capabilities
 
 - React and Vite interface for submitting prompts and reviewing analysis.
