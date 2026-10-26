@@ -27,6 +27,10 @@ The workflow contract is checked by `tests/test_repository_contract.py` to ensur
 6. On pull requests, compare the branch with `origin/main` and require at least one changed Markdown file under `specs/`.
 7. Report successful completion.
 
+## Frontend Dependency Updates
+
+`frontend/package-lock.json` records the exact frontend dependency tree used by CI and local `npm ci` installs. Frontend dependency changes, including security remediations, must update the lockfile and include the corresponding SDD update required by this workflow. CI installs from the lockfile, then runs lint and build checks; vulnerability findings are additionally reported by the separate Trivy workflow.
+
 ## SDD Enforcement
 
 The pull-request check runs:
