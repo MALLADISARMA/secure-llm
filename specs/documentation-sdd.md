@@ -18,6 +18,11 @@ Publish the guide as a GitHub Pages site from the `main` branch.
   permissions; no repository deployment secret is required.
 - The README links to the documentation source and explains the Pages
   prerequisite.
+- The README's security-check overview distinguishes the zero-shot prompt
+  classifier (`facebook/bart-large-mnli`) from the optional Ollama response
+  model (`qwen2.5:1.5b`), summarizes the six analyzed categories and the
+  `0.70` blocking threshold, and notes the supplemental text-pattern checks
+  and separate Trivy vulnerability scanner.
 
 ## Verification
 

@@ -25,6 +25,36 @@ features, API, local setup, and technology choices:
 
 RAG document scanning, tool authorization, Kubernetes deployment, and other platform controls are future work, not implemented features. Security classifications are not a guarantee; evaluate the gateway against your own threat model before relying on it.
 
+## What the Security Checks Do
+
+When you submit a prompt, the gateway checks it in six categories:
+
+| Check | What it looks for |
+| --- | --- |
+| Prompt injection | Text that tries to override or manipulate the instructions the AI should follow. |
+| Jailbreak | Attempts to get the AI to ignore its safety rules or restrictions. |
+| PII / sensitive information | Prompts that appear to contain or request personal or sensitive information. |
+| System prompt leakage | Attempts to reveal hidden instructions or secrets such as passwords and API keys. |
+| Toxicity | Toxic or abusive language. |
+| Malicious intent | Requests that appear to seek help with harmful activity. |
+
+The gateway uses the Hugging Face model `facebook/bart-large-mnli` to score
+each category. It is a **security classifier**, not the model that writes chat
+answers. A score of **0.70 or higher** in any category causes the gateway to
+block the prompt. Scores are model confidence values, not guarantees that a
+prompt is safe or harmful.
+
+There are also a couple of simple text-pattern checks alongside the model. For
+example, wording like “ignore previous instructions” can trigger the prompt
+injection check, and requests to reveal certain secrets can trigger the
+system-prompt-leakage check.
+
+If a prompt is allowed, the browser separately sends it to the optional LLM
+service, which uses Ollama and `qwen2.5:1.5b` by default to generate an answer.
+This is a different model from the security classifier. Trivy is used
+separately to scan files and dependencies for known vulnerabilities; it does
+not classify chat prompts.
+
 ## Architecture
 
 ```mermaid
