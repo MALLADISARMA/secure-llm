@@ -16,7 +16,8 @@ Publish the guide as a GitHub Pages site from the `main` branch.
   dispatches.
 - The workflow uses GitHub's Pages artifact/deployment actions and scoped
   permissions; no repository deployment secret is required.
-- The README links to the documentation source and explains the Pages
+- The README provides a direct HTML link to the live Pages site that opens in
+  a new tab, links to the documentation source, and explains the Pages
   prerequisite.
 - The README's security-check overview distinguishes the zero-shot prompt
   classifier (`facebook/bart-large-mnli`) from the optional Ollama response
