@@ -9,6 +9,7 @@ SecureLLM is an open-source prompt security gateway for LLM applications. It ana
 The project documentation explains the architecture, security checks, frontend
 features, API, local setup, and technology choices:
 
+- <a href="https://malladisarma.github.io/secure-llm/" target="_blank" rel="noopener noreferrer">Open the live documentation site</a>.
 - [Browse the documentation source](docs/index.md).
 - [Run the documentation site locally](docs/development.md#documentation-site).
 - The GitHub Pages site is published from `main` by
