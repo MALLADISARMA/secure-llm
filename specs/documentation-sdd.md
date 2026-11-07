@@ -24,6 +24,10 @@ Publish the guide as a GitHub Pages site from the `main` branch.
   model (`qwen2.5:1.5b`), summarizes the six analyzed categories and the
   `0.70` blocking threshold, and notes the supplemental text-pattern checks
   and separate Trivy vulnerability scanner.
+- The docs home page summarizes the project components and distinguishes the
+  security classifier from the optional response model. The security-analysis
+  page defines all six categories, explains PII and its limitations, and
+  documents the zero-shot model, scoring, blocking behavior, and caveats.
 
 ## Verification
 
