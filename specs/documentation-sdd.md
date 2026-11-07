@@ -24,6 +24,11 @@ Publish the guide as a GitHub Pages site from the `main` branch.
   model (`qwen2.5:1.5b`), summarizes the six analyzed categories and the
   `0.70` blocking threshold, and notes the supplemental text-pattern checks
   and separate Trivy vulnerability scanner.
+- The docs overview introduces the project components and distinguishes the
+  security classifier from the optional generation model. The security
+  analysis page defines all six categories, explains PII and the zero-shot
+  `facebook/bart-large-mnli` pipeline, and describes scoring, blocking, and
+  limitations without presenting classifier scores as guarantees.
 
 ## Verification
 
