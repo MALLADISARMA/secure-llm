@@ -9,6 +9,24 @@ This documentation describes the implementation in this repository. It is not
 a claim that the detector is complete or suitable as the only protection for a
 production LLM system.
 
+## Project overview
+
+SecureLLM is a local-first prompt-security demonstration. The React/Vite
+frontend sends prompts to a FastAPI gateway, which checks six security
+categories before the browser sends an allowed prompt to a separate, optional
+Ollama-backed response service. Redis can store session-scoped analysis
+history, and the gateway also provides a separate API for local Trivy
+filesystem vulnerability scans.
+
+The gateway uses Hugging Face's `facebook/bart-large-mnli` model for
+zero-shot classification. It scores category labels without a
+SecureLLM-specific model-training step; a score of 0.70 or higher in any
+category blocks the prompt in the provided browser flow. This is the security
+classifier, not the model that writes answers. The optional response model is
+`qwen2.5:1.5b`, served locally through Ollama. See
+[Security analysis](security-analysis.md) for definitions of each category,
+the PII explanation, how the classifier works, and its limitations.
+
 ## Find your way around
 
 - [Getting started](getting-started.md) — prerequisites and local run modes.
