@@ -119,7 +119,7 @@ npm run lint
 npm run build
 ```
 
-Use `http://127.0.0.1:8000/docs` to execute both endpoints interactively. The root health endpoint can also be opened directly in a browser.
+Use `http://127.0.0.1:8002/docs` to execute both endpoints interactively. The root health endpoint can also be opened directly in a browser.
 
 ## Analysis History
 

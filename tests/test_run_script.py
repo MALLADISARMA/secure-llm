@@ -43,3 +43,4 @@ def test_run_script_uses_expected_service_directories():
     assert 'Join-Path $root "frontend"' in script
     assert "& $python -m uvicorn app.main:app" in script
     assert "& $npm run dev" in script
+    assert "--port 8002" in script

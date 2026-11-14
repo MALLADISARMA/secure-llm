@@ -1,4 +1,5 @@
-const API_GATEWAY_URL = "http://localhost:8000";
+const API_GATEWAY_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:8002";
 const LLM_SERVICE_URL = "http://localhost:8001";
 const SESSION_STORAGE_KEY = "securellm_session_id";
 
@@ -40,11 +41,29 @@ async function parseResponse(response) {
   return data;
 }
 
+async function requestJson(url, options, serviceName) {
+  let response;
+
+  try {
+    response = await fetch(url, options);
+  } catch (error) {
+    if (error instanceof TypeError) {
+      throw new Error(
+        `Cannot reach the ${serviceName} at ${url}. Check that it is running and that the browser can access it.`
+      );
+    }
+
+    throw error;
+  }
+
+  return parseResponse(response);
+}
+
 /*
  * Analyze a prompt using the SecureLLM API Gateway
  */
 export async function analyzePrompt(prompt) {
-  const response = await fetch(
+  return requestJson(
     `${API_GATEWAY_URL}/chat`,
     {
       method: "POST",
@@ -52,27 +71,28 @@ export async function analyzePrompt(prompt) {
       body: JSON.stringify({
         message: prompt,
       }),
-    }
+    },
+    "API Gateway"
   );
-
-  return parseResponse(response);
 }
 
 export async function getHistory() {
-  const response = await fetch(`${API_GATEWAY_URL}/history`, {
-    headers: gatewayHeaders(),
-  });
-
-  return parseResponse(response);
+  return requestJson(
+    `${API_GATEWAY_URL}/history`,
+    { headers: gatewayHeaders() },
+    "API Gateway"
+  );
 }
 
 export async function clearHistory() {
-  const response = await fetch(`${API_GATEWAY_URL}/history`, {
-    method: "DELETE",
-    headers: gatewayHeaders(),
-  });
-
-  return parseResponse(response);
+  return requestJson(
+    `${API_GATEWAY_URL}/history`,
+    {
+      method: "DELETE",
+      headers: gatewayHeaders(),
+    },
+    "API Gateway"
+  );
 }
 
 
@@ -80,7 +100,7 @@ export async function clearHistory() {
  * Generate an LLM response using the local Ollama/Qwen service
  */
 export async function generateLLMResponse(prompt) {
-  const response = await fetch(
+  return requestJson(
     `${LLM_SERVICE_URL}/generate`,
     {
       method: "POST",
@@ -90,12 +110,7 @@ export async function generateLLMResponse(prompt) {
       body: JSON.stringify({
         message: prompt,
       }),
-    }
+    },
+    "LLM service"
   );
-
-  if (!response.ok) {
-    throw new Error("LLM service request failed");
-  }
-
-  return await response.json();
 }

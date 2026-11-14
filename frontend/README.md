@@ -11,12 +11,12 @@ npm ci
 npm run dev
 ```
 
-Open the local URL printed by Vite, normally `http://localhost:5173`. The API gateway must be running separately at `http://localhost:8000`.
+Open the local URL printed by Vite, normally `http://localhost:5173`. The API gateway must be running separately at `http://localhost:8002`.
 
 To configure another API gateway URL:
 
 ```powershell
-$env:VITE_API_BASE_URL = "http://localhost:8000"
+$env:VITE_API_BASE_URL = "http://localhost:8002"
 npm run dev
 ```
 

@@ -24,6 +24,17 @@ def generate_response(prompt: str) -> str:
         timeout=120
     )
 
+    if (
+        response.status_code == 500
+        and "out of memory" in response.text.lower()
+    ):
+        payload["options"] = {"num_gpu": 0}
+        response = requests.post(
+            OLLAMA_URL,
+            json=payload,
+            timeout=120
+        )
+
     response.raise_for_status()
 
     data = response.json()

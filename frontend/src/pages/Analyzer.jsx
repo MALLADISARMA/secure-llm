@@ -49,7 +49,9 @@ export default function Analyzer() {
       console.error(error);
 
       setError(
-        "Unable to connect to SecureLLM services."
+        error instanceof Error
+          ? error.message
+          : "An unexpected error occurred while analyzing the prompt."
       );
 
     } finally {

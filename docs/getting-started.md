@@ -26,7 +26,7 @@ From the repository root (`secure-llm/`), run:
 
 On first use, the launcher creates `.venv`, installs
 `api-gateway/requirements.txt`, and installs the frontend packages with
-`npm ci`. It starts the gateway at `http://localhost:8000` and Vite at
+`npm ci`. It starts the gateway at `http://localhost:8002` and Vite at
 `http://localhost:5173`. Use `Ctrl+C` or close that terminal to stop the
 services.
 
@@ -99,7 +99,7 @@ python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -r api-gateway/requirements.txt
 $env:PYTHONPATH = "api-gateway"
-python -m uvicorn app.main:app --reload --port 8000
+python -m uvicorn app.main:app --reload --port 8002
 ```
 
 Start the frontend in another:

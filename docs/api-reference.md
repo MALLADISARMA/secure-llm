@@ -1,12 +1,12 @@
 # API reference
 
 The gateway's interactive OpenAPI reference is available at
-[`http://localhost:8000/docs`](http://localhost:8000/docs) while the gateway
+[`http://localhost:8002/docs`](http://localhost:8002/docs) while the gateway
 is running. Its schema is also available at `/openapi.json`.
 
 ## Gateway
 
-Base URL: `http://localhost:8000`
+Base URL: `http://localhost:8002`
 
 ### `GET /`
 
