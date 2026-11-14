@@ -47,7 +47,7 @@ SARIF. The browser does not call either scan flow.
 ## Runtime addresses
 
 - Frontend: `http://localhost:5173`
-- Gateway: `http://localhost:8000`; interactive OpenAPI docs at `/docs`
+- Gateway: `http://localhost:8002`; interactive OpenAPI docs at `/docs`
 - LLM service: `http://localhost:8001`; health check at `/health`
 - Ollama: `http://localhost:11434` by default
 - Redis: `localhost:6379` by default

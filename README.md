@@ -55,6 +55,8 @@ service, which uses Ollama and `qwen2.5:1.5b` by default to generate an answer.
 This is a different model from the security classifier. Trivy is used
 separately to scan files and dependencies for known vulnerabilities; it does
 not classify chat prompts.
+If Ollama reports GPU memory exhaustion during generation, the service retries
+that request using CPU inference.
 
 ## Architecture
 
@@ -62,7 +64,7 @@ not classify chat prompts.
 flowchart TB
     subgraph LocalApp["Local application"]
         Browser["React + Vite browser UI<br/>Dashboard / Analyzer / History"]
-        Gateway["FastAPI API gateway<br/>localhost:8000"]
+        Gateway["FastAPI API gateway<br/>localhost:8002"]
         Chat["POST /chat<br/>X-Session-ID"]
         Analyzer["Security analyzer<br/>six categories, threshold 0.70"]
         Classifier["Hugging Face zero-shot classifier<br/>facebook/bart-large-mnli"]
@@ -104,7 +106,7 @@ The browser sends prompts to the gateway for analysis. The gateway returns an al
 
 The GitHub Actions Trivy scan is independent of the running application: it scans the checked-out repository and does not call the gateway or require application services. The gateway also exposes `POST /security/scan`, which invokes the local Trivy scanner; it is not called by the browser and is separate from the scheduled Actions scan.
 
-The gateway API runs at `http://localhost:8000`; its interactive API documentation is at `http://localhost:8000/docs`. The frontend runs at `http://localhost:5173`. Optional generation uses `http://localhost:8001/generate`.
+The gateway API runs at `http://localhost:8002`; its interactive API documentation is at `http://localhost:8002/docs`. The frontend runs at `http://localhost:5173`. Optional generation uses `http://localhost:8001/generate`.
 
 ## Quick Start
 
@@ -147,7 +149,7 @@ Open PowerShell in the repository root (`secure-llm/`) and run:
 .\run.ps1
 ```
 
-On first run, the script creates `.venv`, installs the API requirements and frontend npm packages, then starts the FastAPI gateway at `http://localhost:8000` and the Vite frontend at `http://localhost:5173`. Press `Ctrl+C` or close that PowerShell window to stop both processes. It does not start Redis, Ollama, Docker, or the LLM container.
+On first run, the script creates `.venv`, installs the API requirements and frontend npm packages, then starts the FastAPI gateway at `http://localhost:8002` and the Vite frontend at `http://localhost:5173`. Press `Ctrl+C` or close that PowerShell window to stop both processes. It does not start Redis, Ollama, Docker, or the LLM container.
 
 ## Run the Complete Local UI
 
@@ -202,7 +204,7 @@ $env:REDIS_URL = "redis://localhost:6379/0"
 .\run.ps1
 ```
 
-On first use, the launcher creates `.venv`, installs backend requirements, and runs `npm ci`. It starts the API at `http://localhost:8000` and the frontend at `http://localhost:5173`. Open this URL in a browser:
+On first use, the launcher creates `.venv`, installs backend requirements, and runs `npm ci`. It starts the API at `http://localhost:8002` and the frontend at `http://localhost:5173`. Open this URL in a browser:
 
 ```text
 http://localhost:5173
@@ -219,7 +221,7 @@ python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -r api-gateway/requirements.txt
 $env:PYTHONPATH = "api-gateway"
-python -m uvicorn app.main:app --reload --port 8000
+python -m uvicorn app.main:app --reload --port 8002
 ```
 
 In a second terminal, start the frontend:

@@ -12,7 +12,7 @@ The repository-root `run.ps1` script:
 2. Creates `.venv` with `python.exe` when the project virtual environment does not exist.
 3. Installs API requirements when the SHA-256 fingerprint of `api-gateway/requirements.txt` changes.
 4. Runs `npm ci` when frontend dependencies are missing or the SHA-256 fingerprint of `frontend/package-lock.json` changes.
-5. Starts Uvicorn for `api-gateway/app/main.py` on port `8000`.
+5. Starts Uvicorn for `api-gateway/app/main.py` on port `8002`.
 6. Starts the Vite development server from `frontend/` on port `5173`.
 7. Starts both services as session-bound PowerShell jobs and redirects standard output and error to `logs/`.
 

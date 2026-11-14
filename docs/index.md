@@ -48,7 +48,7 @@ the PII explanation, how the classifier works, and its limitations.
 | Component | Responsibility | Local address |
 | --- | --- | --- |
 | React/Vite frontend | Dashboard, prompt analyzer, and history UI | `http://localhost:5173` |
-| FastAPI API gateway | Prompt classification, policy decision, history API, and scan API | `http://localhost:8000` |
+| FastAPI API gateway | Prompt classification, policy decision, history API, and scan API | `http://localhost:8002` |
 | Redis (optional) | Session-scoped history storage | `localhost:6379` |
 | FastAPI LLM service (optional) | Forwards an allowed prompt to Ollama | `http://localhost:8001` |
 | Ollama (optional) | Runs the configured local model | `localhost:11434` |

@@ -57,7 +57,7 @@ $apiJob = Start-Job -Name "SecureLLM-API" -ArgumentList @(
     Set-Location $workingDirectory
     $env:PYTHONPATH = $pythonPath
     $env:REDIS_URL = $redisUrl
-    & $python -m uvicorn app.main:app --reload --port 8000 1> $outputLog 2> $errorLog
+    & $python -m uvicorn app.main:app --reload --port 8002 1> $outputLog 2> $errorLog
 }
 
 $frontendJob = Start-Job -Name "SecureLLM-Frontend" -ArgumentList @(
@@ -74,7 +74,7 @@ $frontendJob = Start-Job -Name "SecureLLM-Frontend" -ArgumentList @(
 
 try {
     Write-Host "API Gateway and frontend are running for this terminal session."
-    Write-Host "API:      http://localhost:8000"
+    Write-Host "API:      http://localhost:8002"
     Write-Host "Frontend: http://localhost:5173"
     Write-Host "Press Ctrl+C or close this terminal to stop the services."
     Write-Host "Logs:     $logDirectory"

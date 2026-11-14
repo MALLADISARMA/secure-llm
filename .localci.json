@@ -1,0 +1,9 @@
+{
+    "version": "1.0",
+    "project": "secure-llm",
+    "settings": {
+        "stop_on_failure": true,
+        "default_timeout": 300
+    },
+    "stages": []
+}
